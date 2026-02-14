@@ -1,0 +1,272 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Sakila: Películas e Idiomas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 24px;
+        }
+
+        .box {
+            border: 1px solid #ddd;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+        }
+
+        input,
+        select {
+            padding: 6px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background: #f5f5f5;
+        }
+
+        .muted {
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Base de Datos Sakila (Demo Flask)</h1>
+    <p class="muted">Consultas realizadas en Postgres vía SQLAlchemy usando model.py y queries.py.</p>
+
+    <div class="box">
+        <h2>Menú</h2>
+        <a href="/?view=languages">Listar Idiomas</a> |
+        <a href="/?view=films">Buscar Películas</a> |
+        <a href="/analytics"><strong>Ver Analíticas del Laboratorio</strong></a>
+    </div>
+
+    {% if view == "analytics" %}
+    <h1>Consultas laboratorio</h1>
+
+    <div class="box">
+        <h2>1. Películas con más alquileres por categoría</h2>
+        <table>
+            <tr>
+                <th>Categoría</th>
+                <th>Película</th>
+                <th>Alquileres</th>
+            </tr>
+            {% for r in top_films_by_cat[:50] %}
+            <tr>
+                <td>{{ r.category_name }}</td>
+                <td>{{ r.title }}</td>
+                <td>{{ r.rental_count }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="box">
+        <h2>2. Clientes con gasto superior al promedio</h2>
+        <table>
+            <tr>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Total Gastado ($)</th>
+            </tr>
+            {% for r in high_spenders[:50] %}
+            <tr>
+                <td>{{ r.first_name }}</td>
+                <td>{{ r.last_name }}</td>
+                <td>{{ "%.2f"|format(r.total_spent) }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <p class="muted">Mostrando los primeros 50.</p>
+    </div>
+
+    <div class="box">
+        <h2>3. Películas más alquiladas que el promedio de su categoría</h2>
+        <table>
+            <tr>
+                <th>Película</th>
+                <th>Categoría</th>
+                <th>Alquileres</th>
+                <th>Promedio Categoría</th>
+            </tr>
+            {% for r in above_avg_category_films[:50] %}
+            <tr>
+                <td>{{ r.title }}</td>
+                <td>{{ r.category_name }}</td>
+                <td>{{ r.rental_count }}</td>
+                <td>{{ "%.2f"|format(r.avg_rentals) }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <p class="muted">Mostrando los primeros 50.</p>
+    </div>
+
+    <div class="box">
+        <h2>4. Clientes que alquilaron en el T2 pero no en el T1</h2>
+        <p class="muted">Nota: Muestra clientes activos en T2 (Abr-Jun) que NO alquilaron en T1 (Ene-Mar).</p>
+        <table>
+            <tr>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Email</th>
+            </tr>
+            {% for c in q1_not_q2[:50] %}
+            <tr>
+                <td>{{ c.first_name }}</td>
+                <td>{{ c.last_name }}</td>
+                <td>{{ c.email }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% if q1_not_q2|length == 0 %}
+        <p class="muted">No hay clientes que cumplan este criterio con los datos actuales.</p>
+        {% endif %}
+    </div>
+
+    <hr>
+    <h1>Consultas Básicas del Laboratorio</h1>
+
+    <div class="box">
+        <h2>5. Clientes con más de 30 alquileres</h2>
+        <table>
+            <tr>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Total Alquileres</th>
+            </tr>
+            {% for c in top_customers[:50] %}
+            <tr>
+                <td>{{ c.first_name }}</td>
+                <td>{{ c.last_name }}</td>
+                <td>{{ c.total_rentals }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="box">
+        <h2>6. Categoría más alquilada</h2>
+        {% if top_category %}
+        <p>La categoría más popular es <strong>{{ top_category.name }}</strong> con <strong>{{ top_category.rental_count
+                }}</strong> alquileres.</p>
+        {% endif %}
+    </div>
+
+    <div class="box">
+        <h2>7. Ingresos totales por categoría</h2>
+        <table>
+            <tr>
+                <th>Categoría</th>
+                <th>Ingresos ($)</th>
+            </tr>
+            {% for r in revenue_by_cat[:50] %}
+            <tr>
+                <td>{{ r.name }}</td>
+                <td>{{ "%.2f"|format(r.total_revenue) }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="box">
+        <h2>8. Clientes Activos</h2>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Email</th>
+            </tr>
+            {% for c in active_customers[:50] %}
+            <tr>
+                <td>{{ c.customer_id }}</td>
+                <td>{{ c.first_name }}</td>
+                <td>{{ c.last_name }}</td>
+                <td>{{ c.email }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <p class="muted">Mostrando los primeros 50.</p>
+    </div>
+    {% endif %}
+
+    <div class="box">
+        <h2>Idiomas (Languages)</h2>
+        <form method="get" action="/">
+            <input type="hidden" name="view" value="languages" />
+            <button type="submit">Listar Idiomas</button>
+        </form>
+        {% if view == "languages" %}
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+            </tr>
+            {% for r in languages %}
+            <tr>
+                <td>{{ r.language_id }}</td>
+                <td>{{ r.name }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+    </div>
+
+    <div class="box">
+        <h2>Películas (Films)</h2>
+        <form method="get" action="/">
+            <input type="hidden" name="view" value="films" />
+            <label>Idioma:</label>
+            <select name="lang">
+                <option value="">(todos)</option>
+                {% for l in lang_options %}
+                <option value="{{ l.name }}" {% if l.name==selected_lang %}selected{% endif %}>{{ l.name }}</option>
+                {% endfor %}
+            </select>
+            <label style="margin-left:10px;">Título contiene:</label>
+            <input name="q" value="{{ q or '' }}" placeholder="Ejemplo: DINOSAUR" />
+            <button type="submit">Buscar</button>
+        </form>
+        {% if view == "films" %}
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Año</th>
+                <th>Idioma</th>
+                <th>Clasificación</th>
+            </tr>
+            {% for r in films %}
+            <tr>
+                <td>{{ r.film_id }}</td>
+                <td>{{ r.title }}</td>
+                <td>{{ r.release_year }}</td>
+                <td>{{ r.language.name }}</td>
+                <td>{{ r.rating }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% if films|length == 0 %}
+        <p class="muted">Sin resultados.</p>
+        {% endif %}
+        {% endif %}
+    </div>
+</body>
+
+</html>

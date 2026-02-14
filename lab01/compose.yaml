@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:16
+    container_name: lab01_postgres
+    environment:
+      POSTGRES_PASSWORD: "1234"
+      POSTGRES_USER: "postgres"
+      POSTGRES_DB: "employees"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d employees" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  web:
+    build: ./web
+    container_name: lab01_web
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pg_data:
